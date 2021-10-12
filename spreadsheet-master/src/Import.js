@@ -8,8 +8,10 @@ const Import = () => {
 
     return (
         <StyledImport>
-            Import external data: 
-            <input type="submit" value="Choose file" />
+            <form>
+                Import external data:
+                <input type="file" id="myFile" name="filename"></input>
+            </form>
         </StyledImport>
     );
 };
