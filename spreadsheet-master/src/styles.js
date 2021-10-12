@@ -26,3 +26,15 @@ export const Input = styled.input`
     background-color: #e7f2f8;
   }
 `;
+
+export const Dropdown = styled.div`
+  padding-left: 50px;
+  color: #282828;
+  text-align: left;
+`;
+
+export const Import = styled.div`
+  padding-left: 10px;
+  color: #282828;
+  text-align: left;
+`;
