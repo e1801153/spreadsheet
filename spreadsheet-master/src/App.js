@@ -18,7 +18,6 @@ const App = () => {
               </table>
           <Sheet numberOfRows={10} numberOfColumns={10} />
           <Database/>
-          
       </>
   );
 };

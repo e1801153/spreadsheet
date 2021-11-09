@@ -1,7 +1,9 @@
-import React, { useState, useCallback, Fragment } from "react";
+import React, { useState, useCallback, Fragment, useEffect } from "react";
+import Database from "./Database";
+import ReactDOM from "react-dom";
+
 
 import Cell from "./Cell";
-import Database from "./Database";
 import { Sheet as StyledSheet } from "./styles";
 
 const getColumnName = index =>
@@ -19,6 +21,8 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
     },
     [data, setData]
   );
+
+    
 
   const computeCell = useCallback(
     ({ row, column }) => {
@@ -46,9 +50,8 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
                   return "ERROR!";
               }
           } else if (cellContent === "SPARQL") {
-              let subStitutedExpression = "Moikka";          
-              try {
-                  return eval(subStitutedExpression);
+              try {                  
+                  return (Database);
               } catch (error) {
                   return "Oho!";
               }
