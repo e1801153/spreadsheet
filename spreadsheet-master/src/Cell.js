@@ -13,7 +13,7 @@ const Cell = ({
   const [edit, setEdit] = useState(false);
 
   const value = useMemo(() => {
-    if (edit) {
+      if (edit) {
       return currentValue || "";
     }
     return computeCell({ row: rowIndex, column: columnName });

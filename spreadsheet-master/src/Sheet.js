@@ -1,6 +1,7 @@
 import React, { useState, useCallback, Fragment } from "react";
 
 import Cell from "./Cell";
+import Database from "./Database";
 import { Sheet as StyledSheet } from "./styles";
 
 const getColumnName = index =>
@@ -13,8 +14,8 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
     ({ row, column, value }) => {
       const newData = { ...data };
 
-      newData[`${column}${row}`] = value;
-      setData(newData);
+          newData[`${column}${row}`] = value;
+          setData(newData);
     },
     [data, setData]
   );
@@ -23,28 +24,35 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
     ({ row, column }) => {
       const cellContent = data[`${column}${row}`];
       if (cellContent) {
-        if (cellContent.charAt(0) === "=") {
-          // This regex converts = "A1+A2" to ["A1","+","A2"]
-          const expression = cellContent.substr(1).split(/([+*-])/g);
+          if (cellContent.charAt(0) === "=") {
+              // This regex converts = "A1+A2" to ["A1","+","A2"]
+              const expression = cellContent.substr(1).split(/([+*-])/g);
 
-          let subStitutedExpression = "";
+              let subStitutedExpression = "";
 
-          expression.forEach(item => {
-            // Regex to test if it is of form alphabet followed by number ex: A1
-            if (/^[A-z][0-9]$/g.test(item || "")) {
-              subStitutedExpression += data[(item || "").toUpperCase()] || 0;
-            } else {
-              subStitutedExpression += item;
-            }
-          });
+              expression.forEach(item => {
+                  // Regex to test if it is of form alphabet followed by number ex: A1
+                  if (/^[A-z][0-9]$/g.test(item || "")) {
+                      subStitutedExpression += data[(item || "").toUpperCase()] || 0;
+                  } else {
+                      subStitutedExpression += item;
+                  }
+              });
 
-          // @shame: Need to comeup with parser to replace eval and to support more expressions
-          try {
-            return eval(subStitutedExpression);
-          } catch (error) {
-            return "ERROR!";
+              // @shame: Need to comeup with parser to replace eval and to support more expressions
+              try {
+                  return eval(subStitutedExpression);
+              } catch (error) {
+                  return "ERROR!";
+              }
+          } else if (cellContent === "SPARQL") {
+              let subStitutedExpression = "Moikka";          
+              try {
+                  return eval(subStitutedExpression);
+              } catch (error) {
+                  return "Oho!";
+              }
           }
-        }
         return cellContent;
       }
       return "";
