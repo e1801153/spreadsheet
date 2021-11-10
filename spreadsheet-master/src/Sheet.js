@@ -22,38 +22,56 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
     [data, setData]
   );
 
+    let myJson = "";
+    const [database, setDatabase] = useState([]);
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    function fetchData() {
+        fetch("http://projectware.net:8890/sparql?default-graph-uri=urn%3Asparql%3Abind%3Avamk-data&query=SELECT+%3Fo+WHERE+%7B+%3Fs+%3Fp+%3Fo+%7D&should-sponge=&format=application%2Fsparql-results%2Bjson&timeout=0&debug=on&run=+Run+Query+")
+            .then(response => response.json())
+            .then(jsonData => {
+                console.log(jsonData);
+                jsonData && jsonData.results.bindings && setDatabase(JSON.stringify(jsonData.results.bindings[3].o.value));
+            })
+    }
+
     
 
   const computeCell = useCallback(
     ({ row, column }) => {
+          
       const cellContent = data[`${column}${row}`];
       if (cellContent) {
           if (cellContent.charAt(0) === "=") {
-              // This regex converts = "A1+A2" to ["A1","+","A2"]
-              const expression = cellContent.substr(1).split(/([+*-])/g);
-
-              let subStitutedExpression = "";
-
-              expression.forEach(item => {
-                  // Regex to test if it is of form alphabet followed by number ex: A1
-                  if (/^[A-z][0-9]$/g.test(item || "")) {
-                      subStitutedExpression += data[(item || "").toUpperCase()] || 0;
-                  } else {
-                      subStitutedExpression += item;
+              if (cellContent === "=SPARQL") {
+                  try {                     
+                      return (database);
+                  } catch (error) {
+                      return "Oho!";
                   }
-              });
+              } else {
+                  // This regex converts = "A1+A2" to ["A1","+","A2"]
+                  const expression = cellContent.substr(1).split(/([+*-])/g);
 
-              // @shame: Need to comeup with parser to replace eval and to support more expressions
-              try {
-                  return eval(subStitutedExpression);
-              } catch (error) {
-                  return "ERROR!";
-              }
-          } else if (cellContent === "SPARQL") {
-              try {                  
-                  return (Database);
-              } catch (error) {
-                  return "Oho!";
+                  let subStitutedExpression = "";
+
+                  expression.forEach(item => {
+                      // Regex to test if it is of form alphabet followed by number ex: A1
+                      if (/^[A-z][0-9]$/g.test(item || "")) {
+                          subStitutedExpression += data[(item || "").toUpperCase()] || 0;
+                      } else {
+                          subStitutedExpression += item;
+                      }
+                  });
+
+                  // @shame: Need to comeup with parser to replace eval and to support more expressions
+                  try {
+                      return eval(subStitutedExpression);
+                  } catch (error) {
+                      return "ERROR!";
+                  }
               }
           }
         return cellContent;
