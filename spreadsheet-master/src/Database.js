@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Sheet from "./Sheet";
 
 
 const DataBase = () => {
@@ -13,7 +12,7 @@ const DataBase = () => {
             .then(response => response.json())
             .then(jsonData => {
                 console.log(jsonData);
-                jsonData && jsonData.results.bindings && setData(jsonData.results.bindings[3].o.value);
+                jsonData && jsonData.results.bindings && setData(jsonData.results.bindings[5].o.value);
             })
     }
 
