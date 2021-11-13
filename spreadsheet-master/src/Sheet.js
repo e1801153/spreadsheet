@@ -12,12 +12,20 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
     const setCellValue = useCallback(
         ({ row, column, value }) => {
             const newData = { ...data };
-
             newData[`${column}${row}`] = value;
             setData(newData);
         },
-        [data, setData]
+        [data, setData],
     );
+
+    async function convertComputedCell(row, column, value = '') {
+        const newData = { ...data };
+        value = value.toString();
+        newData[`${column}${row}`] = value;
+        console.log(newData);
+        setData(newData);
+    }
+            
 
     const [database, setDatabase] = useState([]);
     useEffect(() => {
@@ -26,23 +34,25 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
 
     async function fetchData(jsonUrl = '', jsonInteger = {}, jsonChar = {}) {
         await fetch(jsonUrl);
-        fetch(jsonUrl)
-            .then(response => response.json())
-            .then(jsonData => {
-                try {
-                    console.log(jsonChar);
-                    console.log(jsonData.results.bindings[jsonInteger][jsonChar].value);
-                    jsonData && jsonData.results.bindings && setDatabase(jsonData.results.bindings[jsonInteger][jsonChar].value);
-                } catch (error) {
-                    jsonData && jsonData.results.bindings && setDatabase("Invalid parameters!");
-                    console.log(error);
-                }
-            })
+        try {
+            fetch(jsonUrl)
+                .then(response => response.json())
+                .then(jsonData => {
+                    try {
+                        console.log(jsonData.results.bindings[jsonInteger][jsonChar].value);
+                        jsonData && jsonData.results.bindings && setDatabase(jsonData.results.bindings[jsonInteger][jsonChar].value);
+                    } catch (error) {
+                        jsonData && jsonData.results.bindings && setDatabase("Invalid parameters!");
+                        console.log(error);
+                    }
+                })
+        } catch (error) {
+            console.log("400 bad request");
+        }
     }
 
     const computeCell = useCallback(
         ({ row, column }) => {
-
             const cellContent = data[`${column}${row}`];
             if (cellContent) {
                 if (cellContent.charAt(0) === "=") {
@@ -61,14 +71,12 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
                                     let slicedItem = item.slice(1, item.length);
                                     urlQuery += "+%3F";
                                     urlQuery += slicedItem;
-                                    console.log(urlQuery);
                                     if (isFirstItem === true) {
                                         jsonChar = slicedItem;
                                         isFirstItem = false;
                                     }
                                 } else if (item === "WHERE") {
-                                    urlQuery += "+WHERE+%7B"
-                                    console.log(urlQuery);
+                                    urlQuery += "+WHERE+%7B";
                                 }
                             });
                             let jsonUrl = "http://projectware.net:8890/sparql?default-graph-uri=urn%3Asparql%3Abind%3Avamk-data&query=SELECT";
@@ -76,11 +84,13 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
                             // Combining above urls with the queries
                             jsonUrl += urlQuery;
                             jsonUrl += endOfUrl;
-                            let jsonInteger = 5;
+                            let jsonInteger = 16;
                             fetchData(jsonUrl, jsonInteger, jsonChar);
+                            convertComputedCell(row, column, database);
                             return (database);
                         } catch (error) {
                             return "Invalid query!";
+                            console.log(error);
                         }
                     } else {
                         // This regex converts = "A1+A2" to ["A1","+","A2"]
@@ -99,7 +109,9 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
 
                         // @shame: Need to comeup with parser to replace eval and to support more expressions
                         try {
-                            return eval(subStitutedExpression);
+                            let finalexpression = eval(subStitutedExpression);
+                            convertComputedCell(row, column, finalexpression);
+                            return (finalexpression);
                         } catch (error) {
                             return "Invalid query!";
                         }
@@ -111,7 +123,6 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
         },
         [data]
     );
-
     return (
         <StyledSheet numberOfColumns={numberOfColumns}>
             {Array(numberOfRows)
@@ -141,5 +152,4 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
         </StyledSheet>
     );
 };
-
 export default Sheet;
