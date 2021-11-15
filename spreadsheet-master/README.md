@@ -1,18 +1,15 @@
 ## Spreadsheet
 
-Simple spread sheet using react
+Simple spread sheet using react.
 
 ![screenshot](./screenshot.png)
-
-### Why ?
-
-Why not, I thought building spread sheet in react would be cool!
 
 ### To run
 
 ```
-$ yarn
-$ yarn start
+$ Use the following commands:
+$ Yarn (to install Yarn)
+$ Yarn start (to run the program inside the source folder)
 ```
 ### How to use
 ```
