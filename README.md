@@ -1,6 +1,6 @@
 ### Spreadsheet
 
-Simple spread sheet using react.
+Simple spreadsheet using react.
 
 ### To run
 
