@@ -1,8 +1,6 @@
-# spreadsheet## Spreadsheet
+Spreadsheet
 
 Simple spread sheet using react.
-
-![screenshot](./screenshot.png)
 
 ### To run
 
