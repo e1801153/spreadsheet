@@ -1,6 +1,6 @@
-## Spreadsheet
+### Spreadsheet
 
-Simple spread sheet using react.
+Simple spread sheet using react
 
 ![screenshot](./screenshot.png)
 
@@ -9,7 +9,7 @@ Simple spread sheet using react.
 ```
 $ Use the following commands:
 $ Yarn (to install Yarn)
-$ Yarn start (to run the program inside the source folder)
+$ arn start (to run the program inside the source folder)
 ```
 ### How to use
 ```
