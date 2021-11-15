@@ -18,38 +18,36 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
         [data, setData],
     );
 
-    async function convertComputedCell(row, column, value = '') {
+    // turns a cell's value into the computed value
+    function convertComputedCell(row, column, value = '') {
         const newData = { ...data };
         value = value.toString();
         newData[`${column}${row}`] = value;
-        console.log(newData);
         setData(newData);
     }
             
 
-    const [database, setDatabase] = useState([]);
-    useEffect(() => {
-        fetchData();
-    }, []);
 
-    async function fetchData(jsonUrl = '', jsonInteger = {}, jsonChar = {}) {
-        await fetch(jsonUrl);
+    function fetchData(jsonUrl, jsonInteger, jsonChar) {
         try {
             fetch(jsonUrl)
                 .then(response => response.json())
                 .then(jsonData => {
                     try {
-                        console.log(jsonData.results.bindings[jsonInteger][jsonChar].value);
                         jsonData && jsonData.results.bindings && setDatabase(jsonData.results.bindings[jsonInteger][jsonChar].value);
                     } catch (error) {
                         jsonData && jsonData.results.bindings && setDatabase("Invalid parameters!");
-                        console.log(error);
                     }
                 })
         } catch (error) {
-            console.log("400 bad request");
+            console.log(error);
         }
     }
+    const [database, setDatabase] = useState([]);
+    useEffect(() => {
+        fetchData('', {}, {});
+        console.log(database);
+    }, [database]);
 
     const computeCell = useCallback(
         ({ row, column }) => {
@@ -65,18 +63,23 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
                             let urlQuery = "";
                             let jsonChar = '';
                             let isFirstItem = true;
+                            let jsonInteger = 16;
                             // Going through every item, checking if it includes ? or WHERE
                             expression.forEach(item => {
                                 if (item.charAt(0) === "?") {
                                     let slicedItem = item.slice(1, item.length);
+                                    // converting ? sign into URL friendly version
                                     urlQuery += "+%3F";
                                     urlQuery += slicedItem;
+                                    // if this is the first item, it's used as our "jsonChar"
                                     if (isFirstItem === true) {
                                         jsonChar = slicedItem;
                                         isFirstItem = false;
                                     }
                                 } else if (item === "WHERE") {
                                     urlQuery += "+WHERE+%7B";
+                                } else if (!(isNaN(item))) {
+                                    jsonInteger = item;
                                 }
                             });
                             let jsonUrl = "http://projectware.net:8890/sparql?default-graph-uri=urn%3Asparql%3Abind%3Avamk-data&query=SELECT";
@@ -84,8 +87,9 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
                             // Combining above urls with the queries
                             jsonUrl += urlQuery;
                             jsonUrl += endOfUrl;
-                            let jsonInteger = 16;
+                            // Fetching data from database
                             fetchData(jsonUrl, jsonInteger, jsonChar);
+                            // Converting the selected cell into the value of the fetched data
                             convertComputedCell(row, column, database);
                             return (database);
                         } catch (error) {
