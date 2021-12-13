@@ -2,13 +2,22 @@ import React, { useState, useCallback, Fragment, useEffect } from "react";
 import Cell from "./Cell";
 import { Sheet as StyledSheet } from "./styles";
 
+const databaseUrl = "http://projectware.net:8890/sparql?default-graph-uri=urn%3Asparql%3Abind%3Avamk-data&query=select+%3Fs+%3Fo+%3Fp+WHERE+%7B+%3Fs+%3Fo+%3Fp+%7D&should-sponge=&format=application%2Fsparql-results%2Bjson&timeout=0&debug=on&run=+Run+Query+";
+const errorQuery = "Invalid query.";
+const errorParse = "Failed to parse.";
+const errorFetch = "Unable to fetch data.";
+const errorSELECT = "Only SELECT is supported.";
+const errorArguments = "Too many arguments.";
+const maxAmountOfArguments = 3;
+const initializeRow = 0;
+const initializeColumn = "s";
 
 const getColumnName = index =>
     String.fromCharCode("A".charCodeAt(0) + index - 1);
 
 const Sheet = ({ numberOfRows, numberOfColumns }) => {
     const [data, setData] = useState({});
-
+    
     const setCellValue = useCallback(
         ({ row, column, value }) => {
             const newData = { ...data };
@@ -18,109 +27,124 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
         [data, setData],
     );
 
-    // turns a cell's value into the computed value
+    // Convert cells from fetch into a computable format
     function convertComputedCell(row, column, value = '') {
         const newData = { ...data };
         value = value.toString();
         newData[`${column}${row}`] = value;
         setData(newData);
     }
-            
 
-
-    function fetchData(jsonUrl, jsonInteger, jsonChar) {
-        try {
-            fetch(jsonUrl)
-                .then(response => response.json())
-                .then(jsonData => {
-                    try {
-                        jsonData && jsonData.results.bindings && setDatabase(jsonData.results.bindings[jsonInteger][jsonChar].value);
-                    } catch (error) {
-                        jsonData && jsonData.results.bindings && setDatabase("Invalid parameters!");
-                    }
-                })
-        } catch (error) {
-            console.log(error);
-        }
-    }
-    const [database, setDatabase] = useState([]);
+    // Initialize the database
     useEffect(() => {
-        fetchData('', {}, {});
-        console.log(database);
-    }, [database]);
+        fetchData(initializeRow, initializeColumn);
+    }, []);
 
+    const [databaseValue, setDatabaseValue] = useState([]);
+
+    // Fetch from database
+    function fetchData(jsonRow, jsonColumn) {
+        fetch(databaseUrl)
+            .then(response => response.json())
+            .then(jsonData => {
+                try {
+                    console.log(jsonData);
+                    setDatabaseValue(jsonData.results.bindings[jsonRow][jsonColumn].value);
+                } catch (error) {
+                    return errorFetch;
+                }
+            })
+    }
+
+    // Parse SPARQL query and/or compute two cells
     const computeCell = useCallback(
         ({ row, column }) => {
             const cellContent = data[`${column}${row}`];
             if (cellContent) {
-                if (cellContent.charAt(0) === "=") {
-                    if (cellContent.slice(0, 15) === "=SPARQL(SELECT ") {
-                        try {
-                            // Take the string of Cellcontent after =SPARQL(
-                            var subStitutedExpression = cellContent.slice(15, cellContent.length);
-                            // Split the subStitutedExpression after every space to create items
-                            const expression = subStitutedExpression.split(" ");
-                            let urlQuery = "";
-                            let jsonChar = '';
-                            let isFirstItem = true;
-                            let jsonInteger = 16;
-                            // Going through every item, checking if it includes ? or WHERE
-                            expression.forEach(item => {
-                                if (item.charAt(0) === "?") {
-                                    let slicedItem = item.slice(1, item.length);
-                                    // converting ? sign into URL friendly version
-                                    urlQuery += "+%3F";
-                                    urlQuery += slicedItem;
-                                    // if this is the first item, it's used as our "jsonChar"
-                                    if (isFirstItem === true) {
-                                        jsonChar = slicedItem;
-                                        isFirstItem = false;
+                    if (cellContent.charAt(0) === "=") {
+                        if (cellContent.slice(0, 8) === "=SPARQL(" && cellContent.slice(cellContent.length - 1, cellContent.length) == ")") {
+                            try {
+                                const substitutedExpression = cellContent.slice(8, cellContent.length - 1);
+                                const expression = substitutedExpression.split(" ");
+                                let jsonRow = 0;
+                                let jsonColumn;
+                                let lookForSELECT = true;
+                                let lookForFirstItem = true;
+                                let lookForQueryWHERE = true;
+                                let lookForQueryS = true;
+                                let lookForQueryO = true;
+                                let lookForQueryP = true;
+                                let lookForAmountOfArguments = 0;
+                                let foundInvalidQuery = false;
+                                expression.forEach(item => {
+                                    if (item.charAt(0) === "?") {
+                                        let substitutedItem = item.slice(1, item.length);
+                                        if (lookForFirstItem) {
+                                            jsonColumn = substitutedItem;
+                                            lookForFirstItem = false;
+                                        } else if (item.charAt(1) === "s" && item.length == 2) {
+                                            lookForQueryS = false;
+                                            lookForAmountOfArguments++;
+                                        } else if (item.charAt(1) === "o" && item.length == 2) {
+                                            lookForQueryO = false;
+                                            lookForAmountOfArguments++;
+                                        } else if (item.charAt(1) === "p" && item.length == 2) {
+                                            lookForQueryP = false;
+                                            lookForAmountOfArguments++;
+                                        }
+                                    } else if (item === "WHERE") {
+                                        if (!lookForFirstItem) {
+                                            lookForQueryWHERE = false;
+                                        }
+                                    } else if (item === "SELECT") {
+                                        if (lookForFirstItem) {
+                                            lookForSELECT = false;
+                                        }
+                                    } else if (!(isNaN(item)) && lookForAmountOfArguments == maxAmountOfArguments) {
+                                        jsonRow = item;
+                                    } else {
+                                        foundInvalidQuery = true;
                                     }
-                                } else if (item === "WHERE") {
-                                    urlQuery += "+WHERE+%7B";
-                                } else if (!(isNaN(item))) {
-                                    jsonInteger = item;
+                                });
+                                if (jsonColumn && !(lookForFirstItem) && !(lookForQueryWHERE) && !(lookForQueryS) && !(lookForQueryO) && !(lookForQueryP) && !(foundInvalidQuery)) {
+                                    if (!(lookForSELECT)) {
+                                        if (lookForAmountOfArguments <= maxAmountOfArguments) {
+                                            fetchData(jsonRow, jsonColumn);
+                                            convertComputedCell(row, column, databaseValue);
+                                            return (databaseValue);
+                                        } else {
+                                            return errorArguments;
+                                        }
+                                    } else {
+                                        return errorSELECT;
+                                    }
+                                } else {
+                                    return errorQuery;
+                                }
+                            } catch (error) {
+                                return errorParse;
+                            }
+                        } else {
+                            // This regex converts = "A1+A2" to ["A1","+","A2"]
+                            const expression = cellContent.substr(1).split(/([+*-])/g);
+                            let subStitutedExpression = "";
+                            expression.forEach(item => {
+                                // Regex to test if it is of form alphabet followed by number ex: A1
+                                if (/^[A-z][0-9]$/g.test(item || "")) {
+                                    subStitutedExpression += data[(item || "").toUpperCase()] || 0;
+                                } else {
+                                    subStitutedExpression += item;
                                 }
                             });
-                            let jsonUrl = "http://projectware.net:8890/sparql?default-graph-uri=urn%3Asparql%3Abind%3Avamk-data&query=SELECT";
-                            const endOfUrl = "+%7D%0D%0A&should-sponge=&format=application%2Fsparql-results%2Bjson&timeout=0&debug=on&run=+Run+Query+";
-                            // Combining above urls with the queries
-                            jsonUrl += urlQuery;
-                            jsonUrl += endOfUrl;
-                            // Fetching data from database
-                            fetchData(jsonUrl, jsonInteger, jsonChar);
-                            // Converting the selected cell into the value of the fetched data
-                            convertComputedCell(row, column, database);
-                            return (database);
-                        } catch (error) {
-                            return "Invalid query!";
-                            console.log(error);
-                        }
-                    } else {
-                        // This regex converts = "A1+A2" to ["A1","+","A2"]
-                        const expression = cellContent.substr(1).split(/([+*-])/g);
-
-                        let subStitutedExpression = "";
-
-                        expression.forEach(item => {
-                            // Regex to test if it is of form alphabet followed by number ex: A1
-                            if (/^[A-z][0-9]$/g.test(item || "")) {
-                                subStitutedExpression += data[(item || "").toUpperCase()] || 0;
-                            } else {
-                                subStitutedExpression += item;
+                            try {
+                                let finalexpression = eval(subStitutedExpression);
+                                convertComputedCell(row, column, finalexpression);
+                                return (finalexpression);
+                            } catch (error) {
+                                return "Failed to compute.";
                             }
-                        });
-
-                        // @shame: Need to comeup with parser to replace eval and to support more expressions
-                        try {
-                            let finalexpression = eval(subStitutedExpression);
-                            convertComputedCell(row, column, finalexpression);
-                            return (finalexpression);
-                        } catch (error) {
-                            return "Invalid query!";
                         }
                     }
-                }
                 return cellContent;
             }
             return "";
