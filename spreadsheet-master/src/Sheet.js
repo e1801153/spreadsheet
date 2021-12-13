@@ -71,6 +71,8 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
                                 let lookForSELECT = true;
                                 let lookForFirstItem = true;
                                 let lookForQueryWHERE = true;
+                                let lookforOpeningBracket = true;
+                                let lookforClosingBracket = true;
                                 let lookForQueryS = true;
                                 let lookForQueryO = true;
                                 let lookForQueryP = true;
@@ -82,13 +84,13 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
                                         if (lookForFirstItem) {
                                             jsonColumn = substitutedItem;
                                             lookForFirstItem = false;
-                                        } else if (item.charAt(1) === "s" && item.length == 2) {
+                                        } else if (item.charAt(1) === "s" && item.length == 2 && !(lookForQueryWHERE)) {
                                             lookForQueryS = false;
                                             lookForAmountOfArguments++;
-                                        } else if (item.charAt(1) === "o" && item.length == 2) {
+                                        } else if (item.charAt(1) === "o" && item.length == 2 && !(lookForQueryWHERE)) {
                                             lookForQueryO = false;
                                             lookForAmountOfArguments++;
-                                        } else if (item.charAt(1) === "p" && item.length == 2) {
+                                        } else if (item.charAt(1) === "p" && item.length == 2 && !(lookForQueryWHERE)) {
                                             lookForQueryP = false;
                                             lookForAmountOfArguments++;
                                         }
@@ -102,16 +104,30 @@ const Sheet = ({ numberOfRows, numberOfColumns }) => {
                                         }
                                     } else if (!(isNaN(item)) && lookForAmountOfArguments == maxAmountOfArguments) {
                                         jsonRow = item;
+                                    } else if(item === "{") {
+                                        if (lookforOpeningBracket && !lookForQueryWHERE)
+                                            lookforOpeningBracket = false;
+                                    } else if (item === "}") {
+                                        if (lookforClosingBracket && lookForAmountOfArguments > 0)
+                                            lookforClosingBracket = false;
                                     } else {
                                         foundInvalidQuery = true;
                                     }
                                 });
-                                if (jsonColumn && !(lookForFirstItem) && !(lookForQueryWHERE) && !(lookForQueryS) && !(lookForQueryO) && !(lookForQueryP) && !(foundInvalidQuery)) {
+                                if (jsonColumn && !(lookForFirstItem) && !(lookForQueryWHERE) && !(lookForQueryS) && !(lookForQueryO) && !(lookForQueryP)) {
                                     if (!(lookForSELECT)) {
-                                        if (lookForAmountOfArguments <= maxAmountOfArguments) {
-                                            fetchData(jsonRow, jsonColumn);
-                                            convertComputedCell(row, column, databaseValue);
-                                            return (databaseValue);
+                                        if (lookForAmountOfArguments = maxAmountOfArguments) {
+                                            if (!(lookforClosingBracket) && !(lookforOpeningBracket)) {
+                                                if (!(foundInvalidQuery)) {
+                                                    fetchData(jsonRow, jsonColumn);
+                                                    convertComputedCell(row, column, databaseValue);
+                                                    return (databaseValue);
+                                                } else {
+                                                    return errorQuery;
+                                                }
+                                            } else {
+                                                return errorQuery;
+                                            }
                                         } else {
                                             return errorArguments;
                                         }
