@@ -10,7 +10,7 @@ const errorSELECT = "Only SELECT is supported.";
 const errorArguments = "Too many arguments.";
 const maxAmountOfArguments = 3;
 const initializeRow = 0;
-const initializeColumn = "s";
+const initializeColumn = "p";
 
 const getColumnName = index =>
     String.fromCharCode("A".charCodeAt(0) + index - 1);
